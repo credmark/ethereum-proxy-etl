@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+        "keccak",
+        "zeppelinos"
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": [
+        "--init-hook",
+        "import sys; sys.path.insert(0, './ethereum_proxy_etl')"
+    ]
+}

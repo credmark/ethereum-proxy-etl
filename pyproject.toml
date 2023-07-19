@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "ethereum-proxy-etl"
+version = "0.1.0"
+description = ""
+authors = ["v1nvn <v1n@outlook.com>"]
+readme = "README.md"
+packages = [{include = "ethereum_proxy_etl"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+web3 = "^6.5.0"
+snowflake-connector-python = {extras = ["pandas"], version = "^3.0.4"}
+pyarrow = "<10.1.0"
+aiohttp = "^3.8.4"
+aiodns = "^3.0.0"
+sqlalchemy = "^2.0.18"
+psycopg2 = "^2.9.6"
+ethereum-dasm = "^0.1.5"
+asyncpg = "^0.28.0"
+python-dotenv = "^1.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.2"
+pycodestyle = "^2.10.0"
+pylint = "^2.17.4"
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.pytest.ini_options]
+markers = [
+    "only: only run marked test",
+]
