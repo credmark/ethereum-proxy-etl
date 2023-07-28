@@ -80,7 +80,7 @@ async def check_proxy(proxy_type: str, method: Callable[[str], str]):
                 idx += 1
 
 
-async def check_updates():
+async def update_existing_async():
     workers = [asyncio.create_task(worker()) for _ in range(1)]
 
     for proxy in proxies:
@@ -93,4 +93,5 @@ async def check_updates():
     await asyncio.gather(*workers, return_exceptions=True)
 
 
-asyncio.run(check_updates())
+def update_existing():
+    asyncio.run(update_existing_async())
