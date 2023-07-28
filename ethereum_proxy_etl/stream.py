@@ -2,17 +2,17 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Callable, Literal, TypedDict
 
-from detect import (check_ara_proxy, check_comptroller_proxy,
-                    check_eip_897_proxy, check_eip_1167_minimal_proxy,
-                    check_eip_1822_proxy, check_eip_1967_beacon_proxy,
-                    check_eip_1967_direct_proxy, check_gnosis_safe_proxy,
-                    check_many_to_one_proxy, check_one_to_one_proxy,
-                    check_oz_proxy, check_p_proxy_proxy)
-from db import ProxyContracts, async_engine
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.sql import text
 
+from .db import ProxyContracts, async_engine
+from .detect import (check_ara_proxy, check_comptroller_proxy,
+                     check_eip_897_proxy, check_eip_1167_minimal_proxy,
+                     check_eip_1822_proxy, check_eip_1967_beacon_proxy,
+                     check_eip_1967_direct_proxy, check_gnosis_safe_proxy,
+                     check_many_to_one_proxy, check_one_to_one_proxy,
+                     check_oz_proxy, check_p_proxy_proxy)
 
 # No of types of proxy markers to process at a time
 MARKER_CONCURRENCY = 5

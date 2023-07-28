@@ -2,14 +2,14 @@ import asyncio
 from collections import defaultdict
 from typing import Any, cast
 
-from env import ETH_NODE_URL
-from eth_typing import BlockIdentifier
 from eth_utils import to_bytes, to_text
 from ethereum_dasm.evmdasm import Contract, EvmCode
 from web3 import AsyncHTTPProvider, AsyncWeb3, Web3
 from web3._utils.encoding import FriendlyJsonSerde
 from web3._utils.request import async_make_post_request
-from web3.types import RPCResponse
+from web3.types import BlockIdentifier, RPCResponse
+
+from .env import ETH_NODE_URL
 
 
 class NodeBatchProvider(AsyncHTTPProvider):
@@ -115,60 +115,60 @@ async def check_eip_1167_minimal_proxy(bytecode: str | list[str]):
     return read_address(addr)
 
 
-async def check_eip_1967_direct_proxy(proxy_addr: str | list[str]):
-    return await get_stored_addr_at(proxy_addr, EIP_1967_LOGIC_SLOT)
+async def check_eip_1967_direct_proxy(proxy_addr: str | list[str], block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, EIP_1967_LOGIC_SLOT, block)
 
 
-async def check_eip_1967_beacon_proxy(proxy_addr: str | list[str]):
-    beacon_addr = await get_stored_addr_at(proxy_addr, EIP_1967_BEACON_SLOT)
+async def check_eip_1967_beacon_proxy(proxy_addr: str | list[str], block: BlockIdentifier = 'latest'):
+    beacon_addr = await get_stored_addr_at(proxy_addr, EIP_1967_BEACON_SLOT, block)
     if isinstance(proxy_addr, list):
         implementations = []
-        method_0 = await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[0])
-        method_1 = await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[1])
+        method_0 = await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[0], block)
+        method_1 = await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[1], block)
         for idx, _ in enumerate(proxy_addr):
             implementations.append(
                 method_1[idx] if method_0[idx] is None else method_0[idx])
         return implementations
 
     try:
-        return await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[0])
-    except:
-        return await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[1])
+        return await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[0], block)
+    except:  # pylint: disable=bare-except
+        return await call_for_addr(beacon_addr, EIP_1167_BEACON_METHODS[1], block)
 
 
-async def check_oz_proxy(proxy_addr: str):
-    return await get_stored_addr_at(proxy_addr, OPEN_ZEPPELIN_IMPLEMENTATION_SLOT)
+async def check_oz_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, OPEN_ZEPPELIN_IMPLEMENTATION_SLOT, block)
 
 
-async def check_eip_1822_proxy(proxy_addr: str):
-    return await get_stored_addr_at(proxy_addr, EIP_1822_LOGIC_SLOT)
+async def check_eip_1822_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, EIP_1822_LOGIC_SLOT, block)
 
 
-async def check_p_proxy_proxy(proxy_addr: str):
-    return await get_stored_addr_at(proxy_addr, P_PROXY_LOGIC_SLOT)
+async def check_p_proxy_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, P_PROXY_LOGIC_SLOT, block)
 
 
-async def check_ara_proxy(proxy_addr: str):
-    return await get_stored_addr_at(proxy_addr, ARA_LOGIC_SLOT)
+async def check_ara_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, ARA_LOGIC_SLOT, block)
 
 
-async def check_one_to_one_proxy(proxy_addr: str):
-    return await get_stored_addr_at(proxy_addr, ONE_TO_ONE_LOGIC_SLOT)
+async def check_one_to_one_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await get_stored_addr_at(proxy_addr, ONE_TO_ONE_LOGIC_SLOT, block)
 
 
-async def check_eip_897_proxy(proxy_addr: str):
-    return await call_for_addr(proxy_addr, EIP_897_INTERFACE[0])
+async def check_eip_897_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await call_for_addr(proxy_addr, EIP_897_INTERFACE[0], block)
 
 
-async def check_gnosis_safe_proxy(proxy_addr: str):
-    return await call_for_addr(proxy_addr, GNOSIS_SAFE_PROXY_INTERFACE[0])
+async def check_gnosis_safe_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await call_for_addr(proxy_addr, GNOSIS_SAFE_PROXY_INTERFACE[0], block)
 
 
-async def check_comptroller_proxy(proxy_addr: str):
-    return await call_for_addr(proxy_addr, COMPTROLLER_PROXY_INTERFACE[0])
+async def check_comptroller_proxy(proxy_addr: str, block: BlockIdentifier = 'latest'):
+    return await call_for_addr(proxy_addr, COMPTROLLER_PROXY_INTERFACE[0], block)
 
 
-async def check_many_to_one_proxy(bytecode: str):
+async def check_many_to_one_proxy(bytecode: str, block: BlockIdentifier = 'latest'):
     is_single = isinstance(bytecode, str)
     if is_single:
         bytecode = [bytecode]
@@ -179,32 +179,33 @@ async def check_many_to_one_proxy(bytecode: str):
             addrs.append(read_address(addr))
         except ValueError:
             addrs.append(None)
-    res = await call_for_addr(addrs, MANY_TO_ONE_HANDLER_METHODS[0])
+    res = await call_for_addr(addrs, MANY_TO_ONE_HANDLER_METHODS[0], block)
     if is_single:
         return res[0]
     return res
 
 
-def divide_chunks(l: list, n: int):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+def divide_chunks(big_list: list, chunk_size: int):
+    for i in range(0, len(big_list), chunk_size):
+        yield big_list[i:i + chunk_size]
 
 
-async def get_stored_addr_at(addr: str | list[str], location: str):
+async def get_stored_addr_at(addr: str | list[str], location: str, block: BlockIdentifier = 'latest'):
     if isinstance(addr, list):
-        responses = await asyncio.gather(*[get_stored_addrs_at(chunk, location) for chunk in divide_chunks(addr, 100)])
+        responses = await asyncio.gather(*[get_stored_addrs_at(chunk, location, block) for chunk in divide_chunks(addr, 100)])
         return sum(responses, [])
 
     res = await w3.eth.get_storage_at(
         Web3.to_checksum_address(addr),
-        int(location, 16))
+        int(location, 16),
+        'latest' if not block else block)
     return read_address(res.hex())
 
 
-async def get_stored_addrs_at(addrs: list[str], location: str) -> list[str | None]:
+async def get_stored_addrs_at(addrs: list[str], location: str, block: BlockIdentifier = 'latest') -> list[str | None]:
     responses = await node_provider.batch_requests(
         'eth_getStorageAt',
-        [[Web3.to_checksum_address(addr), location, 'latest']
+        [[Web3.to_checksum_address(addr), location, 'latest' if not block else block]
          for addr in addrs]
     )
 
@@ -217,15 +218,15 @@ async def get_stored_addrs_at(addrs: list[str], location: str) -> list[str | Non
     return storage_list
 
 
-async def call_for_addr(addr: str | list[str], data: Any):
+async def call_for_addr(addr: str | list[str], data: Any, block: BlockIdentifier = 'latest'):
     if isinstance(addr, list):
-        responses = await asyncio.gather(*[call_for_addrs(chunk, data) for chunk in divide_chunks(addr, 100)])
+        responses = await asyncio.gather(*[call_for_addrs(chunk, data, block) for chunk in divide_chunks(addr, 100)])
         return sum(responses, [])
 
     res = await w3.eth.call({
         'to': Web3.to_checksum_address(addr),
         'data': data
-    })
+    }, 'latest' if not block else block)
     return read_address(res.hex())
 
 
@@ -272,7 +273,7 @@ def read_address(addr) -> str:
     if not Web3.is_address(addr):
         raise ValueError('Invalid web3 address')
 
-    ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+    ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'  # pylint: disable=invalid_name
     if addr == ZERO_ADDRESS:
         raise ValueError('Zero address')
 
@@ -288,7 +289,7 @@ def parse_1167_bytecode(bytecode: str) -> str:
         raise ValueError('Not an EIP-1167 bytecode')
 
     # detect length of address (20 bytes non-optimized, 0 < N < 20 bytes for vanity addresses)
-    push_n_hex = bytecode[len(EIP_1167_BYTECODE_PREFIX)                          :len(EIP_1167_BYTECODE_PREFIX) + 2]
+    push_n_hex = bytecode[len(EIP_1167_BYTECODE_PREFIX):len(EIP_1167_BYTECODE_PREFIX) + 2]
 
     # push1 ... push20 use opcodes 0x60 ... 0x73
     address_length = int(push_n_hex, base=16) - 0x5f
@@ -299,7 +300,7 @@ def parse_1167_bytecode(bytecode: str) -> str:
     addressFromBytecode = bytecode[len(
         EIP_1167_BYTECODE_PREFIX) + 2:len(EIP_1167_BYTECODE_PREFIX) + 2 + address_length * 2]
 
-    SUFFIX_OFFSET_FROM_ADDRESS_END = 22
+    SUFFIX_OFFSET_FROM_ADDRESS_END = 22  # pylint: disable=invalid-name
     if not bytecode[len(EIP_1167_BYTECODE_PREFIX) + 2 + address_length * 2 + SUFFIX_OFFSET_FROM_ADDRESS_END:].startswith(EIP_1167_BYTECODE_SUFFIX):
         raise ValueError('Not an EIP-1167 bytecode')
 

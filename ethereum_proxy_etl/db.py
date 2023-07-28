@@ -1,12 +1,13 @@
 from datetime import datetime
 
 import snowflake.connector
-from env import (POSTGRES_DATABASE, POSTGRES_HOST, POSTGRES_PASSWORD,
-                 POSTGRES_PORT, POSTGRES_USERNAME, SNOWFLAKE_ACCOUNT,
-                 SNOWFLAKE_PASSWORD, SNOWFLAKE_USER)
 from sqlalchemy import TIMESTAMP, URL
 from sqlalchemy.ext.asyncio import AsyncAttrs, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from .env import (POSTGRES_DATABASE, POSTGRES_HOST, POSTGRES_PASSWORD,
+                  POSTGRES_PORT, POSTGRES_USERNAME, SNOWFLAKE_ACCOUNT,
+                  SNOWFLAKE_PASSWORD, SNOWFLAKE_USER)
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -30,7 +31,8 @@ def async_engine():
         password=POSTGRES_PASSWORD,
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
-        database=POSTGRES_DATABASE
+        database=POSTGRES_DATABASE,
+        query={}
     )
     return create_async_engine(pg_url, echo=False)
 

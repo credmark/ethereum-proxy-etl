@@ -2,16 +2,15 @@ import asyncio
 from typing import Callable
 
 from sqlalchemy import update
-
-from db import async_engine, ProxyContracts
-from detect import (check_ara_proxy, check_comptroller_proxy,
-                    check_eip_897_proxy, check_eip_1822_proxy,
-                    check_eip_1967_beacon_proxy, check_eip_1967_direct_proxy,
-                    check_gnosis_safe_proxy, check_one_to_one_proxy,
-                    check_oz_proxy, check_p_proxy_proxy)
-from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.sql import text
 
+from .db import ProxyContracts, async_engine
+from .detect import (check_ara_proxy, check_comptroller_proxy,
+                     check_eip_897_proxy, check_eip_1822_proxy,
+                     check_eip_1967_beacon_proxy, check_eip_1967_direct_proxy,
+                     check_gnosis_safe_proxy, check_one_to_one_proxy,
+                     check_oz_proxy, check_p_proxy_proxy)
 
 engine = async_engine()
 async_session = async_sessionmaker(engine)
