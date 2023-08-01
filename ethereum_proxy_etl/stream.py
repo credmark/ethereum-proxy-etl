@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Callable, Literal, TypedDict
 
-from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.sql import text
 
@@ -100,7 +100,17 @@ async def handle_batch(_batch_id: str, proxy_type: str, check_proxy: Callable[[s
 
     if len(batch) > 0:
         async with async_session.begin() as session:
-            await session.execute(insert(ProxyContracts), batch)
+            insert_stmt = insert(ProxyContracts)
+            upsert_stmt = insert_stmt.on_conflict_do_update(
+                index_elements=[ProxyContracts.proxy_address],
+                set_=dict(proxy_type=insert_stmt.excluded.proxy_type,
+                          implementation_address=insert_stmt.excluded.implementation_address,
+                          updated_at=insert_stmt.excluded.updated_at),
+                where=text(
+                    "(proxy_contracts.proxy_type = 'eip_897' AND excluded.proxy_type = 'eip_1967_beacon') OR (proxy_contracts.proxy_type = 'eip_1967_direct' AND excluded.proxy_type = 'eip_897')")
+            )
+
+            await session.execute(upsert_stmt, batch)
 
     # print(f'batch-{batch_id} is processed. Inserted {len(batch)}.')
 
@@ -112,11 +122,12 @@ async def worker(idx: int):
         try:
             await handle_batch(*args)
         except Exception as err:
-            print('Got exception when processing batch')
-            print(err)
             batch_id = args[0]
-            df = args[-1]
-            df.to_csv(f'error-{batch_id}.csv')
+            batch = args[-1]
+            print(
+                f'Got exception when processing batch. batch_id={batch_id}, batch=')
+            print(batch)
+            print(err)
         finally:
             queue.task_done()
 
