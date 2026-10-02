@@ -10,7 +10,7 @@ packages = [{include = "ethereum_proxy_etl"}]
 python = "^3.10"
 web3 = "^6.5.0"
 snowflake-connector-python = {extras = ["pandas"], version = "^3.0.4"}
-pyarrow = "<10.1.0"
+pyarrow = "<14.1.0"
 aiohttp = "^3.13.3"
 aiodns = "^3.0.0"
 sqlalchemy = "^2.0.18"
